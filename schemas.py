@@ -1,48 +1,46 @@
 """
-Database Schemas
+Database Schemas for Roblox Idea Lab & Robux Planner
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model corresponds to a MongoDB collection (lowercased class name).
+These are used for validation and for the database viewer.
 """
-
+from typing import List, Optional
 from pydantic import BaseModel, Field
-from typing import Optional
+from datetime import datetime
 
-# Example schemas (replace with your own):
+# Core saved entities
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class Task(BaseModel):
+    title: str = Field(..., description="Task title")
+    done: bool = Field(False, description="Completion state")
+    due_date: Optional[str] = Field(None, description="ISO date string, optional")
+    icon: Optional[str] = Field(None, description="Optional icon keyword")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class Plan(BaseModel):
+    name: str = Field(..., description="Project/plan name")
+    type: str = Field(..., description="game | earning | challenge")
+    description: Optional[str] = Field(None, description="Short summary")
+    goal_robux: Optional[int] = Field(None, description="Target Robux goal")
+    idea_id: Optional[str] = Field(None, description="Linked idea ID if any")
+    earning_path_id: Optional[str] = Field(None, description="Linked earning path ID if any")
+    tasks: List[Task] = Field(default_factory=list, description="Task checklist")
+    progress: int = Field(0, ge=0, le=100, description="Progress percentage 0-100")
+    streak_days: int = Field(0, description="Days in a row with at least one completed task")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Inspiration(BaseModel):
+    title: str = Field(..., description="Inspiration title")
+    style_notes: Optional[str] = Field(None, description="Notes about colors, shapes, atmosphere")
+    use_cases: List[str] = Field(default_factory=list, description="Where it can be used")
+    build_checklist: List[str] = Field(default_factory=list, description="Parts to model")
+    favorite: bool = Field(False, description="User favorited or not")
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+# Optional: store lightweight idea bookmarks (ideas catalog can be static)
+class IdeaBookmark(BaseModel):
+    idea_id: str = Field(..., description="Static catalog idea ID")
+    title: str = Field(..., description="Title snapshot of the idea")
+    tags: List[str] = Field(default_factory=list, description="Tags at time of saving")
+
+# Metadata wrapper for created/updated timestamps (auto added by helper)
+class Timestamped(BaseModel):
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
